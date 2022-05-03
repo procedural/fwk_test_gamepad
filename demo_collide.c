@@ -11,6 +11,42 @@ camera_t cam;
 void game_loop(void *userdata) {
     if(!window_swap()) return;
 
+    {
+      EMSCRIPTEN_RESULT result = EMSCRIPTEN_RESULT_SUCCESS;
+      EmscriptenGamepadEvent gamepadState = {};
+      {
+        result = emscripten_sample_gamepad_data();
+        if (result == EMSCRIPTEN_RESULT_SUCCESS) {
+          result = emscripten_get_gamepad_status(0, &gamepadState);
+          if (result == EMSCRIPTEN_RESULT_SUCCESS) {
+            //emscripten_console_log("[EMS] Gamepad reading success!");
+          } else {
+            //emscripten_console_log("[EMS] Gamepad reading error!");
+          }
+        }
+      }
+      // NOTE(Constantine): Hardcoded for an Xbox One controller.
+      const float axisDeadZone    = 0.15f;
+      const int   axisSideMove    = 0;
+      const int   axisForwardMove = 1;
+      const int   axisYaw         = 2;
+      const int   axisPitch       = 3;
+      if (fabs(gamepadState.axis[axisSideMove]) < axisDeadZone) {
+        gamepadState.axis[axisSideMove] = 0;
+      }
+      if (fabs(gamepadState.axis[axisForwardMove]) < axisDeadZone) {
+        gamepadState.axis[axisForwardMove] = 0;
+      }
+      if (fabs(gamepadState.axis[axisYaw]) < axisDeadZone) {
+        gamepadState.axis[axisYaw] = 0;
+      }
+      if (fabs(gamepadState.axis[axisPitch]) < axisDeadZone) {
+        gamepadState.axis[axisPitch] = 0;
+      }
+      camera_move(&cam, gamepadState.axis[axisSideMove], 0.f, -gamepadState.axis[axisForwardMove]);
+      camera_fps(&cam, gamepadState.axis[axisYaw], -gamepadState.axis[axisPitch]);
+    }
+
     // key handler
     if (input_down(KEY_F11) ) window_fullscreen( window_has_fullscreen()^1 );
     if (input_down(KEY_ESC) ) window_loop_exit(); // @todo: break -> window_close()
